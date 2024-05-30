@@ -53,6 +53,15 @@ app.post('/update-url', (req, res) => {
     res.json({ status: 'URL updated' });
 });
 
+app.get('/current-url', (req, res) => {
+    const { sessionId } = req.query;
+    if (!sessions[sessionId]) {
+        return res.status(400).json({ error: 'Invalid session ID' });
+    }
+    const { audioUrl } = sessions[sessionId];
+    res.json({ url: audioUrl });
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
