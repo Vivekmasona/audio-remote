@@ -55,10 +55,13 @@ app.post('/update-url', (req, res) => {
 
 app.get('/current-url', (req, res) => {
     const { sessionId } = req.query;
+    console.log('Received session ID:', sessionId); // Log received session ID
     if (!sessions[sessionId]) {
+        console.error('Invalid session ID:', sessionId); // Log invalid session ID error
         return res.status(400).json({ error: 'Invalid session ID' });
     }
     const { audioUrl } = sessions[sessionId];
+    console.log('Current URL:', audioUrl); // Log current audio URL
     res.json({ url: audioUrl });
 });
 
