@@ -2,9 +2,9 @@
   "name": "audio-control-server",
   "version": "1.0.0",
   "description": "Server to control audio playback and synchronize sessions",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.17.1",
