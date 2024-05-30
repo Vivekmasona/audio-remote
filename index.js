@@ -6,64 +6,48 @@ const app = express();
 app.use(bodyParser.json());
 app.use(cors());
 
-let sessions = {};
+let audioUrl = ''; // Current audio URL
+let sessionId = ''; // Session ID
+let audioStatus = 'stop'; // Audio player status
+let volume = 100; // Initial volume
 
-app.post('/create-session', (req, res) => {
-    const sessionId = Math.random().toString(36).substring(2, 10);
-    sessions[sessionId] = {
-        audioStatus: 'stop',
-        audioUrl: '',
-        volume: '100%'
-    };
-    res.json({ sessionId });
+app.post('/update-url', (req, res) => {
+    const { url } = req.body;
+    audioUrl = url;
+    sessionId = generateSessionId(); // Generate a unique session ID
+    res.json({ status: 'URL updated', sessionId: sessionId });
 });
 
 app.post('/control', (req, res) => {
-    const { sessionId, action, value } = req.body;
-    if (!sessions[sessionId]) {
-        return res.status(400).json({ error: 'Invalid session ID' });
-    }
-
-    if (action === 'play' || action === 'pause' || action === 'stop') {
-        sessions[sessionId].audioStatus = action;
+    const { action, value } = req.body;
+    
+    if (action === 'play') {
+        audioStatus = 'play';
+    } else if (action === 'pause') {
+        audioStatus = 'pause';
+    } else if (action === 'stop') {
+        audioStatus = 'stop';
     } else if (action === 'volume') {
-        if (value >= 0 && value <= 100) {
-            sessions[sessionId].volume = value + '%';
-        }
+        volume = value; // Update volume
     }
 
-    res.json({ status: 'Button click received', action });
-});
-
-app.get('/audio-status', (req, res) => {
-    const { sessionId } = req.query;
-    if (!sessions[sessionId]) {
-        return res.status(400).json({ error: 'Invalid session ID' });
-    }
-    const { audioStatus, volume, audioUrl } = sessions[sessionId];
-    res.json({ status: audioStatus, volume, url: audioUrl });
-});
-
-app.post('/update-url', (req, res) => {
-    const { sessionId, url } = req.body;
-    if (!sessions[sessionId]) {
-        return res.status(400).json({ error: 'Invalid session ID' });
-    }
-    sessions[sessionId].audioUrl = url;
-    res.json({ status: 'URL updated' });
+    res.json({ status: 'Action received', action });
 });
 
 app.get('/current-url', (req, res) => {
-    const { sessionId } = req.query;
-    console.log('Received session ID:', sessionId); // Log received session ID
-    if (!sessions[sessionId]) {
-        console.error('Invalid session ID:', sessionId); // Log invalid session ID error
-        return res.status(400).json({ error: 'Invalid session ID' });
+    const { id } = req.query;
+    // Check if the session ID matches
+    if (id === sessionId) {
+        res.json({ url: audioUrl, status: audioStatus, volume: volume });
+    } else {
+        res.status(404).json({ error: 'Session not found' });
     }
-    const { audioUrl } = sessions[sessionId];
-    console.log('Current URL:', audioUrl); // Log current audio URL
-    res.json({ url: audioUrl });
 });
+
+// Function to generate a unique session ID
+function generateSessionId() {
+    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+}
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
