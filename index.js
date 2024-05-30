@@ -6,25 +6,44 @@ const app = express();
 app.use(bodyParser.json());
 app.use(cors());
 
-let audioUrl = ''; // Current audio URL
+// Object to store session IDs and corresponding URLs
+const sessionUrls = {};
 
-// Endpoint to update the audio URL
-app.post('/update-url', (req, res) => {
+// Route to update URL with session ID
+app.post('/update-url/:sessionId', (req, res) => {
+    const sessionId = req.params.sessionId;
     const { url } = req.body;
-    audioUrl = url;
-    const sessionId = generateSessionId(); // Generate a unique session ID
-    res.json({ status: 'URL updated', sessionId: sessionId, url: audioUrl });
+
+    sessionUrls[sessionId] = url; // Store URL with session ID
+    res.json({ success: true });
 });
 
-// Endpoint to retrieve the current audio URL
-app.get('/current-url', (req, res) => {
-    res.json({ url: audioUrl });
+// Route to control audio player
+app.post('/control/:sessionId', (req, res) => {
+    const sessionId = req.params.sessionId;
+    const { action } = req.body;
+
+    // Check if session ID exists
+    if (!sessionUrls[sessionId]) {
+        return res.json({ success: false, error: 'Invalid session ID' });
+    }
+
+    // Perform action based on the request
+    // For simplicity, just send back the URL along with the session ID
+    res.json({ success: true, sessionId: sessionId });
 });
 
-// Function to generate a unique session ID
-function generateSessionId() {
-    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-}
+// Route to retrieve current URL for a specific session ID
+app.get('/current-url/:sessionId', (req, res) => {
+    const sessionId = req.params.sessionId;
+
+    // Check if session ID exists
+    if (!sessionUrls[sessionId]) {
+        return res.json({ success: false, error: 'Invalid session ID' });
+    }
+
+    res.json({ success: true, sessionId: sessionId, url: sessionUrls[sessionId] });
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
