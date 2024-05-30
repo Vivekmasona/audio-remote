@@ -1,16 +1,15 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const { v4: uuidv4 } = require('uuid'); // For generating unique codes
 
 const app = express();
 app.use(bodyParser.json());
 app.use(cors());
 
-const sessions = {}; // Store session data
+let sessions = {};
 
 app.post('/create-session', (req, res) => {
-    const sessionId = uuidv4();
+    const sessionId = Math.random().toString(36).substring(2, 10);
     sessions[sessionId] = {
         audioStatus: 'stop',
         audioUrl: '',
@@ -21,17 +20,15 @@ app.post('/create-session', (req, res) => {
 
 app.post('/control', (req, res) => {
     const { sessionId, action, value } = req.body;
-
     if (!sessions[sessionId]) {
-        return res.status(404).json({ error: 'Session not found' });
+        return res.status(400).json({ error: 'Invalid session ID' });
     }
 
     if (action === 'play' || action === 'pause' || action === 'stop') {
         sessions[sessionId].audioStatus = action;
     } else if (action === 'volume') {
-        const numericValue = parseInt(value);
-        if (!isNaN(numericValue) && numericValue >= 0 && numericValue <= 100) {
-            sessions[sessionId].volume = numericValue + '%';
+        if (value >= 0 && value <= 100) {
+            sessions[sessionId].volume = value + '%';
         }
     }
 
@@ -40,36 +37,24 @@ app.post('/control', (req, res) => {
 
 app.get('/audio-status', (req, res) => {
     const { sessionId } = req.query;
-
     if (!sessions[sessionId]) {
-        return res.status(404).json({ error: 'Session not found' });
+        return res.status(400).json({ error: 'Invalid session ID' });
     }
-
-    res.json(sessions[sessionId]);
+    const { audioStatus, volume, audioUrl } = sessions[sessionId];
+    res.json({ status: audioStatus, volume, url: audioUrl });
 });
 
 app.post('/update-url', (req, res) => {
     const { sessionId, url } = req.body;
-
     if (!sessions[sessionId]) {
-        return res.status(404).json({ error: 'Session not found' });
+        return res.status(400).json({ error: 'Invalid session ID' });
     }
-
     sessions[sessionId].audioUrl = url;
     res.json({ status: 'URL updated' });
-});
-
-app.get('/current-url', (req, res) => {
-    const { sessionId } = req.query;
-
-    if (!sessions[sessionId]) {
-        return res.status(404).json({ error: 'Session not found' });
-    }
-
-    res.json({ url: sessions[sessionId].audioUrl });
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
+
